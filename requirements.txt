@@ -1,0 +1,10 @@
+feedparser
+beautifulsoup4
+requests
+spacy
+wikipedia-api
+fpdf
+schedule
+sentence-transformers
+torch
+scikit-learn
