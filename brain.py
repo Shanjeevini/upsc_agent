@@ -1,46 +1,50 @@
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+import spacy
 import wikipediaapi
+from collections import Counter
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# UPSC topic anchors (semantic goals)
-TOPIC_DESCRIPTIONS = {
-    "Polity": "Constitution Supreme Court Parliament governance judiciary fundamental rights",
-    "Economy": "GDP inflation RBI fiscal policy IMF World Bank economy banking taxation",
-    "Environment": "climate biodiversity conservation tiger reserve pollution UNFCCC",
-    "International Relations": "bilateral relations UN NATO foreign policy diplomacy",
-    "Science & Tech": "ISRO AI biotechnology research innovation technology",
-    "Social Issues": "education health poverty women child development scheme"
-}
-
-topic_embeddings = {
-    topic: model.encode(text) for topic, text in TOPIC_DESCRIPTIONS.items()
-}
-
+nlp = spacy.load("en_core_web_sm")
 wiki = wikipediaapi.Wikipedia("en")
 
+TOPIC_KEYWORDS = {
+    "Polity": ["constitution", "court", "parliament", "act", "bill", "election"],
+    "Economy": ["gdp", "rbi", "inflation", "tax", "budget", "economy"],
+    "Environment": ["climate", "biodiversity", "pollution", "forest", "wildlife"],
+    "International Relations": ["united nations", "bilateral", "foreign", "treaty"],
+    "Science & Tech": ["isro", "ai", "research", "technology", "innovation"],
+    "Social Issues": ["education", "health", "poverty", "women", "child"]
+}
+
+
 def classify_article(text):
-    article_embedding = model.encode(text)
+    doc = nlp(text.lower())
+    word_list = [token.text for token in doc]
+
     scores = {}
 
-    for topic, embedding in topic_embeddings.items():
-        score = cosine_similarity(
-            [article_embedding], [embedding]
-        )[0][0]
-        scores[topic] = score
+    for topic, keywords in TOPIC_KEYWORDS.items():
+        count = sum(word_list.count(k) for k in keywords)
+        scores[topic] = count
 
     best_topic = max(scores, key=scores.get)
+
+    if scores[best_topic] == 0:
+        return None, 0
+
     return best_topic, scores[best_topic]
 
 
-def enrich_entities(title):
-    words = title.split()
+def extract_entities(text):
+    doc = nlp(text)
+    entities = list(set([ent.text for ent in doc.ents]))
+    return entities[:5]
+
+
+def enrich_entities(entities):
     enriched = []
 
-    for word in words:
-        page = wiki.page(word)
+    for entity in entities:
+        page = wiki.page(entity)
         if page.exists():
-            enriched.append(f"{word}: {page.summary[:300]}")
+            enriched.append(f"{entity}: {page.summary[:200]}")
 
     return enriched
