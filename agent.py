@@ -2,7 +2,7 @@ import feedparser
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-from brain import classify_article, enrich_entities
+from brain import classify_article, extract_entities, enrich_entities
 
 RSS_FEEDS = [
     "https://www.thehindu.com/news/national/feeder/default.rss",
@@ -55,9 +55,10 @@ def agent_run():
         topic, score = classify_article(content)
 
         if score < 0.30:
-            continue  # reject low relevance
-
-        enrichment = enrich_entities(article["title"])
+            if topic is None:
+               continue
+        entities = extract_entities(content)
+        enrichment = enrich_entities(entities)
 
         processed.append({
             "title": article["title"],
@@ -72,4 +73,5 @@ def agent_run():
 
 
 if __name__ == "__main__":
+
     agent_run()
