@@ -28,7 +28,7 @@ jobs:
         run: python generate_pdf.py
 
       - name: Upload PDF
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: upsc-report
-          path: upsc_daily_report.pdf
+         name: upsc-report
+         path: upsc_daily_report.pdf
