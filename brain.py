@@ -3,7 +3,10 @@ import wikipediaapi
 from collections import Counter
 
 nlp = spacy.load("en_core_web_sm")
-wiki = wikipediaapi.Wikipedia("en")
+wiki = wikipediaapi.Wikipedia(
+    language="en",
+    user_agent="upsc-agent (research project)"
+)
 
 TOPIC_KEYWORDS = {
     "Polity": ["constitution", "court", "parliament", "act", "bill", "election"],
@@ -48,3 +51,4 @@ def enrich_entities(entities):
             enriched.append(f"{entity}: {page.summary[:200]}")
 
     return enriched
+
