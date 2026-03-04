@@ -1,15 +1,16 @@
 name: UPSC Daily Agent
 
 on:
-  schedule:
-    - cron: "30 14 * * *"   # 8 PM IST
   workflow_dispatch:
+  schedule:
+    - cron: "30 14 * * *"   # 8 PM IST daily
 
 jobs:
   run-agent:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -24,11 +25,10 @@ jobs:
           python -m spacy download en_core_web_sm
 
       - name: Run UPSC Agent
-        run: |
-          python generate_pdf.py
+        run: python generate_pdf.py
 
       - name: Upload PDF
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: upsc-daily-report
-          path: "*.pdf"
+          name: upsc-report
+          path: upsc_daily_report.pdf
