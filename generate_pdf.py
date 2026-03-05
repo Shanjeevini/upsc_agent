@@ -18,16 +18,16 @@ def generate_pdf():
 
     pdf.cell(0,10,"UPSC DAILY CURRENT AFFAIRS",ln=True)
 
-    for note in notes:
+   for note in notes:
 
-        note = clean_text(note)
+    safe_text = note.encode("latin-1", "ignore").decode("latin-1")
 
-        pdf.multi_cell(0,8,note)
-
-        pdf.ln()
+    pdf.multi_cell(0, 8, safe_text)
+    pdf.ln()
 
     pdf.output("upsc_daily_report.pdf")
 
 
 if __name__ == "__main__":
     generate_pdf()
+
