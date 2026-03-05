@@ -37,18 +37,18 @@ def extract_json(text):
 def evaluate_news(headline):
 
     prompt = f"""
-You are an expert UPSC and SSC exam analyst.
+You are a UPSC exam analyst.
 
-Evaluate the following news headline.
+Evaluate this headline.
 
 Headline:
 {headline}
 
 Tasks:
+1. Is it relevant for competitive exams?
+2. Classify category.
 
-1. Determine if this news is relevant for competitive exams.
-2. If relevant, classify into one category:
-
+Categories:
 World
 India
 Polity
@@ -58,22 +58,19 @@ Environment
 International Relations
 Tamil Nadu
 
-3. Extract the main topic/entity.
-
-Respond ONLY in JSON format:
+Return JSON only:
 
 {{
-"relevant": "Yes or No",
-"category": "category name",
-"topic": "main entity",
-"reason": "why it matters for exams"
+"relevant":"Yes or No",
+"category":"category",
+"topic":"main entity"
 }}
 """
 
     try:
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": "You are a UPSC current affairs expert."},
                 {"role": "user", "content": prompt}
@@ -90,6 +87,7 @@ Respond ONLY in JSON format:
     except Exception as e:
 
         print("LLM evaluation error:", e)
+
         return None
 
 
@@ -109,6 +107,7 @@ def retrieve_knowledge(topic):
             return page.summary[:1200]
 
     except Exception as e:
+
         print("Wikipedia error:", e)
 
     return ""
@@ -120,9 +119,7 @@ def retrieve_knowledge(topic):
 def generate_exam_notes(headline, category, topic, background):
 
     prompt = f"""
-You are a UPSC current affairs expert.
-
-Create exam-ready notes for the following news.
+Create UPSC exam notes.
 
 Headline:
 {headline}
@@ -133,26 +130,21 @@ Category:
 Topic:
 {topic}
 
-Background Knowledge:
+Background:
 {background}
-
-Generate structured notes.
 
 Format:
 
 Summary
-
 Key Points
-
-Important GK Facts
-
-Possible Exam Questions
+Important Facts
+Possible Questions
 """
 
     try:
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
         )
@@ -168,11 +160,8 @@ Summary:
 {headline}
 
 Key Points:
-Could not generate detailed notes due to API error.
+Unable to generate full notes.
 
-Important GK Facts:
-Topic: {topic}
-
-Possible Exam Questions:
-What is the significance of {topic}?
+Topic:
+{topic}
 """
