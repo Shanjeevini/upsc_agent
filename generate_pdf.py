@@ -3,56 +3,56 @@ from datetime import datetime
 from agent import agent_run
 
 
+# Fix for Unicode characters that FPDF cannot encode
 def clean_text(text):
-    """
-    Convert text to latin-1 compatible characters
-    to avoid FPDF Unicode errors.
-    """
-    return text.encode("latin-1", "ignore").decode("latin-1")
+    return text.encode("latin-1", "replace").decode("latin-1")
+
+
+class UPSCPDF(FPDF):
+
+    def header(self):
+        self.set_font("Arial", "B", 16)
+        self.cell(0, 10, "UPSC Daily Current Affairs", 0, 1, "C")
+
+        today = datetime.now().strftime("%d %B %Y")
+        self.set_font("Arial", "", 12)
+        self.cell(0, 8, f"Date: {today}", 0, 1, "C")
+
+        self.ln(5)
+
+    def section_title(self, title):
+        self.set_font("Arial", "B", 14)
+        self.cell(0, 10, clean_text(title), 0, 1)
+
+    def section_body(self, text):
+        self.set_font("Arial", "", 11)
+        self.multi_cell(0, 8, clean_text(text))
+        self.ln(3)
 
 
 def generate_pdf():
 
-    print("📄 Generating UPSC Daily PDF...")
+    print("Running UPSC Agent...")
 
-    # Run the agent to collect notes
-    notes = agent_run()
+    try:
+        notes = agent_run()
+    except Exception as e:
+        print("Agent error:", e)
+        notes = ["Agent failed but PDF will still be created."]
 
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
+    pdf = UPSCPDF()
     pdf.add_page()
 
-    # Title
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "UPSC Daily Current Affairs", ln=True, align="C")
-
-    pdf.ln(5)
-
-    # Date
-    pdf.set_font("Arial", "", 12)
-    date_str = datetime.now().strftime("%d %B %Y")
-    pdf.cell(0, 10, f"Date: {date_str}", ln=True)
-
-    pdf.ln(5)
-
-    pdf.set_font("Arial", size=11)
-
-    # Add each note
-    for note in notes:
-
-        safe_note = clean_text(note)
-
-        pdf.multi_cell(0, 8, safe_note)
-        pdf.ln(3)
+    for i, note in enumerate(notes, 1):
+        pdf.section_title(f"Topic {i}")
+        pdf.section_body(note)
 
     filename = "upsc_daily_report.pdf"
 
     pdf.output(filename)
 
-    print(f"✅ PDF Generated: {filename}")
+    print("PDF generated successfully:", filename)
 
 
 if __name__ == "__main__":
     generate_pdf()
-
