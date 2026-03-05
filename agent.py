@@ -1,77 +1,61 @@
 import feedparser
-import requests
-from bs4 import BeautifulSoup
-from datetime import datetime
-from brain import classify_article, extract_entities, enrich_entities
+import json
+from brain import evaluate_news, retrieve_knowledge, generate_exam_notes
 
 RSS_FEEDS = [
     "https://www.thehindu.com/news/national/feeder/default.rss",
-    "https://pib.gov.in/rssfeed.aspx"
+    "https://www.thehindu.com/news/international/feeder/default.rss"
 ]
 
-def fetch_articles():
-    today = datetime.now().date()
+
+def collect_news():
+
     articles = []
 
-    for feed_url in RSS_FEEDS:
-        feed = feedparser.parse(feed_url)
+    for feed in RSS_FEEDS:
 
-        for entry in feed.entries:
-            try:
-                published = datetime(*entry.published_parsed[:6]).date()
-            except:
-                continue
+        parsed = feedparser.parse(feed)
 
-            if published == today:
-                articles.append({
-                    "title": entry.title,
-                    "link": entry.link,
-                })
+        for entry in parsed.entries[:20]:
+
+            articles.append(entry.title)
 
     return articles
 
 
-def extract_text(url):
-    try:
-        response = requests.get(url, timeout=10)
-        soup = BeautifulSoup(response.text, "html.parser")
-        paragraphs = soup.find_all("p")
-        return " ".join([p.get_text() for p in paragraphs])
-    except:
-        return ""
-
-
 def agent_run():
+
     print("🧠 Agent Activated")
 
-    collected = fetch_articles()
-    processed = []
+    news = collect_news()
 
-    for article in collected:
-        content = extract_text(article["link"])
-        if len(content) < 300:
+    final_notes = []
+
+    for headline in news:
+
+        print("Analyzing:", headline)
+
+        analysis = evaluate_news(headline)
+
+        try:
+
+            data = json.loads(analysis)
+
+        except:
             continue
 
-        topic, score = classify_article(content)
+        if data["relevant"] == "Yes":
 
-        if score < 0.30:
-            if topic is None:
-               continue
-        entities = extract_entities(content)
-        enrichment = enrich_entities(entities)
+            topic = data["topic"]
 
-        processed.append({
-            "title": article["title"],
-            "topic": topic,
-            "score": score,
-            "content": content[:800],
-            "enrichment": enrichment
-        })
+            background = retrieve_knowledge(topic)
 
-    print(f"Selected {len(processed)} relevant articles.")
-    return processed
+            notes = generate_exam_notes(
+                headline,
+                topic,
+                background
+            )
 
+            final_notes.append(notes)
 
-if __name__ == "__main__":
-
-    agent_run()
+    return final_notes
