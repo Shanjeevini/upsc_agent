@@ -1,61 +1,96 @@
 import feedparser
-import json
 from brain import evaluate_news, retrieve_knowledge, generate_exam_notes
 
+
+# RSS feeds for news collection
 RSS_FEEDS = [
     "https://www.thehindu.com/news/national/feeder/default.rss",
-    "https://www.thehindu.com/news/international/feeder/default.rss"
+    "https://www.thehindu.com/news/international/feeder/default.rss",
+    "https://www.thehindu.com/news/tamilnadu/feeder/default.rss"
 ]
 
 
+# -----------------------------
+# Collect news headlines
+# -----------------------------
 def collect_news():
 
-    articles = []
+    headlines = []
 
-    for feed in RSS_FEEDS:
+    for feed_url in RSS_FEEDS:
 
-        parsed = feedparser.parse(feed)
+        feed = feedparser.parse(feed_url)
 
-        for entry in parsed.entries[:20]:
+        for entry in feed.entries[:20]:
+            headlines.append(entry.title)
 
-            articles.append(entry.title)
-
-    return articles
+    return headlines
 
 
+# -----------------------------
+# Main agent pipeline
+# -----------------------------
 def agent_run():
 
     print("🧠 Agent Activated")
 
-    news = collect_news()
+    news_headlines = collect_news()
+
+    print(f"Collected {len(news_headlines)} headlines")
 
     final_notes = []
 
-    for headline in news:
+    for headline in news_headlines:
 
         print("Analyzing:", headline)
 
         analysis = evaluate_news(headline)
 
-        try:
-
-            data = json.loads(analysis)
-
-        except:
+        if analysis is None:
             continue
 
-        if data["relevant"] == "Yes":
+        # Skip non-relevant news
+        if analysis["relevant"] != "Yes":
+            continue
 
-            topic = data["topic"]
+        category = analysis["category"]
+        topic = analysis["topic"]
 
-            background = retrieve_knowledge(topic)
+        print("Relevant:", category, "| Topic:", topic)
 
-            notes = generate_exam_notes(
-                headline,
-                topic,
-                background
-            )
+        # Retrieve background knowledge
+        background = retrieve_knowledge(topic)
 
-            final_notes.append(notes)
+        # Generate UPSC notes
+        notes = generate_exam_notes(
+            headline,
+            category,
+            topic,
+            background
+        )
+
+        formatted_note = f"""
+====================================
+Category: {category}
+
+Headline:
+{headline}
+
+{notes}
+====================================
+"""
+
+        final_notes.append(formatted_note)
+
+    print(f"\nGenerated notes for {len(final_notes)} important articles\n")
 
     return final_notes
+
+
+# Run agent if executed directly
+if __name__ == "__main__":
+
+    results = agent_run()
+
+    for note in results:
+        print(note)
