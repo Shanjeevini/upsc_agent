@@ -4,9 +4,6 @@ from datetime import datetime
 
 
 def clean_text(text):
-    """
-    Remove unsupported unicode characters for FPDF
-    """
     return text.encode("latin-1", "replace").decode("latin-1")
 
 
@@ -14,7 +11,6 @@ def generate_pdf():
 
     pdf = FPDF()
     pdf.add_page()
-
     pdf.set_auto_page_break(auto=True, margin=15)
 
     # Title
@@ -24,26 +20,25 @@ def generate_pdf():
     pdf.ln(5)
 
     pdf.set_font("Arial", "", 12)
-
     date = datetime.now().strftime("%d %B %Y")
     pdf.cell(0, 10, f"Date: {date}", ln=True, align="C")
 
-    pdf.ln(15)
+    pdf.ln(10)
+
+    notes = []
 
     try:
 
         notes = agent_run()
 
-        if not notes:
-            notes = ["No important UPSC news found today."]
-
     except Exception as e:
 
         print("Agent error:", e)
 
-        notes = ["Agent encountered an error while collecting news."]
+    # if agent returned nothing
+    if not notes:
+        notes = ["No UPSC relevant news generated today."]
 
-    # Write topics
     topic_number = 1
 
     for note in notes:
