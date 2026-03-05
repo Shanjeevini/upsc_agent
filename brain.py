@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from groq import Groq
 import wikipediaapi
 
@@ -13,6 +14,21 @@ wiki = wikipediaapi.Wikipedia(
     user_agent="UPSC-AI-Agent",
     language="en"
 )
+
+
+# ------------------------------
+# Extract JSON safely
+# ------------------------------
+def extract_json(text):
+
+    try:
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+    except:
+        pass
+
+    return None
 
 
 # ------------------------------
@@ -54,20 +70,26 @@ Respond ONLY in JSON format:
 }}
 """
 
-    response = client.chat.completions.create(
-    model="llama-3.3-70b-versatile",
-    messages=[
-        {"role": "system", "content": "You are a UPSC current affairs expert."},
-        {"role": "user", "content": prompt}
-    ],
-    temperature=0.2
-)
-
-    result = response.choices[0].message.content
-
     try:
-        return json.loads(result)
-    except:
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a UPSC current affairs expert."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2
+        )
+
+        result = response.choices[0].message.content
+
+        parsed = extract_json(result)
+
+        return parsed
+
+    except Exception as e:
+
+        print("LLM evaluation error:", e)
         return None
 
 
@@ -76,13 +98,18 @@ Respond ONLY in JSON format:
 # ------------------------------
 def retrieve_knowledge(topic):
 
-    if topic is None:
-        return ""
+    try:
 
-    page = wiki.page(topic)
+        if topic is None:
+            return ""
 
-    if page.exists():
-        return page.summary[:1200]
+        page = wiki.page(topic)
+
+        if page.exists():
+            return page.summary[:1200]
+
+    except Exception as e:
+        print("Wikipedia error:", e)
 
     return ""
 
@@ -122,13 +149,30 @@ Important GK Facts
 Possible Exam Questions
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-    )
+    try:
 
-    return response.choices[0].message.content
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
 
+        return response.choices[0].message.content
 
+    except Exception as e:
 
+        print("Note generation error:", e)
+
+        return f"""
+Summary:
+{headline}
+
+Key Points:
+Could not generate detailed notes due to API error.
+
+Important GK Facts:
+Topic: {topic}
+
+Possible Exam Questions:
+What is the significance of {topic}?
+"""
