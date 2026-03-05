@@ -3,6 +3,6 @@ beautifulsoup4
 requests
 wikipedia-api
 fpdf
-openai
+openai>=1.0.0
 python-dotenv
 spacy
