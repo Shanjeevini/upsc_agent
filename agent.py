@@ -19,10 +19,19 @@ def collect_news():
 
     for feed_url in RSS_FEEDS:
 
-        feed = feedparser.parse(feed_url)
+        try:
+            print("Fetching:", feed_url)
 
-        for entry in feed.entries[:20]:
-            headlines.append(entry.title)
+            feed = feedparser.parse(feed_url)
+
+            for entry in feed.entries[:5]:  # reduced headlines to save tokens
+                if hasattr(entry, "title"):
+                    headlines.append(entry.title)
+
+        except Exception as e:
+            print("RSS error:", e)
+
+    print("Total headlines collected:", len(headlines))
 
     return headlines
 
@@ -32,62 +41,76 @@ def collect_news():
 # -----------------------------
 def agent_run():
 
-    print("🧠 Agent Activated")
+    print("Agent Activated")
 
     news_headlines = collect_news()
 
-    print(f"Collected {len(news_headlines)} headlines")
+    if len(news_headlines) == 0:
+        return ["No news could be fetched today."]
 
     final_notes = []
 
     for headline in news_headlines:
 
-        print("Analyzing:", headline)
+        if len(final_notes) >= 5:  # limit report size
+            break
 
-        analysis = evaluate_news(headline)
+        try:
 
-        if analysis is None:
-            continue
+            print("Analyzing:", headline)
 
-        # Skip non-relevant news
-        if analysis["relevant"] != "Yes":
-            continue
+            analysis = evaluate_news(headline)
 
-        category = analysis["category"]
-        topic = analysis["topic"]
+            if analysis is None:
+                continue
 
-        print("Relevant:", category, "| Topic:", topic)
+            if analysis.get("relevant") != "Yes":
+                continue
 
-        # Retrieve background knowledge
-        background = retrieve_knowledge(topic)
+            category = analysis.get("category", "General")
+            topic = analysis.get("topic", headline)
 
-        # Generate UPSC notes
-        notes = generate_exam_notes(
-            headline,
-            category,
-            topic,
-            background
-        )
+            print("Relevant:", category, "| Topic:", topic)
 
-        formatted_note = f"""
+            background = retrieve_knowledge(topic)
+
+            notes = generate_exam_notes(
+                headline,
+                category,
+                topic,
+                background
+            )
+
+            formatted_note = f"""
 ====================================
+
 Category: {category}
 
 Headline:
 {headline}
 
 {notes}
+
 ====================================
 """
 
-        final_notes.append(formatted_note)
+            final_notes.append(formatted_note)
+
+        except Exception as e:
+
+            print("Processing error:", e)
+            continue
+
+    if len(final_notes) == 0:
+        final_notes.append(
+            "UPSC relevant news could not be generated today."
+        )
 
     print(f"\nGenerated notes for {len(final_notes)} important articles\n")
 
     return final_notes
 
 
-# Run agent if executed directly
 if __name__ == "__main__":
 
     results = agent_run()
