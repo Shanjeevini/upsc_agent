@@ -36,9 +36,11 @@ def generate_pdf():
 
     try:
         notes = agent_run()
-    except Exception as e:
-        print("Agent error:", e)
-        notes = ["Agent failed but PDF will still be created."]
+   except Exception as e:
+    import traceback
+    print("Agent error:")
+    traceback.print_exc()
+    notes = ["Agent failed but PDF will still be created."]
 
     pdf = UPSCPDF()
     pdf.add_page()
@@ -56,3 +58,4 @@ def generate_pdf():
 
 if __name__ == "__main__":
     generate_pdf()
+
