@@ -32,7 +32,7 @@ def send_email():
         smtp.login(EMAIL_USER, EMAIL_PASS)
         smtp.send_message(msg)
 
-    print("Email sent successfully!")
+    print("Sending email to:", EMAIL_TO)
 
 if __name__ == "__main__":
     send_email()
