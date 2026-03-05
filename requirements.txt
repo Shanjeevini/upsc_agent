@@ -5,3 +5,4 @@ wikipedia-api
 fpdf
 openai
 python-dotenv
+spacy
