@@ -1,54 +1,90 @@
-import spacy
+import os
+import openai
 import wikipediaapi
-from collections import Counter
 
-nlp = spacy.load("en_core_web_sm")
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
 wiki = wikipediaapi.Wikipedia(
-    language="en",
-    user_agent="upsc-agent (research project)"
+    user_agent="UPSC-AI-Agent",
+    language="en"
 )
 
-TOPIC_KEYWORDS = {
-    "Polity": ["constitution", "court", "parliament", "act", "bill", "election"],
-    "Economy": ["gdp", "rbi", "inflation", "tax", "budget", "economy"],
-    "Environment": ["climate", "biodiversity", "pollution", "forest", "wildlife"],
-    "International Relations": ["united nations", "bilateral", "foreign", "treaty"],
-    "Science & Tech": ["isro", "ai", "research", "technology", "innovation"],
-    "Social Issues": ["education", "health", "poverty", "women", "child"]
-}
+def evaluate_news(headline):
+
+    prompt = f"""
+You are an expert UPSC and SSC exam analyst.
+
+Evaluate the following news headline:
+
+{headline}
+
+Tasks:
+1. Is this relevant for UPSC or SSC exams? (Yes or No)
+2. If relevant, classify into one of these:
+   World
+   India
+   Polity
+   Economy
+   Science & Technology
+   Environment
+   International Relations
+   Tamil Nadu
+3. Explain why it is important for competitive exams.
+4. Extract the key topic entity (country, organization, person, institution).
+
+Respond in JSON format.
+"""
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.2
+    )
+
+    return response["choices"][0]["message"]["content"]
 
 
-def classify_article(text):
-    doc = nlp(text.lower())
-    word_list = [token.text for token in doc]
+def retrieve_knowledge(topic):
 
-    scores = {}
+    page = wiki.page(topic)
 
-    for topic, keywords in TOPIC_KEYWORDS.items():
-        count = sum(word_list.count(k) for k in keywords)
-        scores[topic] = count
+    if page.exists():
 
-    best_topic = max(scores, key=scores.get)
+        text = page.summary[:1000]
 
-    if scores[best_topic] == 0:
-        return None, 0
+        return text
 
-    return best_topic, scores[best_topic]
+    return ""
 
 
-def extract_entities(text):
-    doc = nlp(text)
-    entities = list(set([ent.text for ent in doc.ents]))
-    return entities[:5]
+def generate_exam_notes(headline, topic, background):
 
+    prompt = f"""
+You are a UPSC current affairs analyst.
 
-def enrich_entities(entities):
-    enriched = []
+Headline:
+{headline}
 
-    for entity in entities:
-        page = wiki.page(entity)
-        if page.exists():
-            enriched.append(f"{entity}: {page.summary[:200]}")
+Topic:
+{topic}
 
-    return enriched
+Background Knowledge:
+{background}
 
+Create exam ready notes.
+
+Structure:
+
+Summary
+Key Facts
+Important GK Points
+Possible Exam Questions
+"""
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.3
+    )
+
+    return response["choices"][0]["message"]["content"]
