@@ -1,9 +1,9 @@
-name: UPSC Daily Agent
+name: Daily UPSC Agent
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "30 14 * * *"   # 8 PM IST daily
+    - cron: '30 14 * * *'   # 8 PM IST
+  workflow_dispatch:
 
 jobs:
   run-agent:
@@ -11,26 +11,31 @@ jobs:
 
     steps:
 
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          python -m spacy download en_core_web_sm
+    - name: Install dependencies
+      run: pip install -r requirements.txt
 
-      - name: Run UPSC Agent
-        run: python generate_pdf.py
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    - name: Run UPSC Agent
+      run: python generate_pdf.py
+      env:
+        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
-      - name: Upload PDF
-        uses: actions/upload-artifact@v4
-        with:
-         name: upsc-report
-         path: upsc_daily_report.pdf
+    - name: Upload PDF
+      uses: actions/upload-artifact@v4
+      with:
+        name: upsc-report
+        path: upsc_daily_report.pdf
+
+    - name: Send Email
+      run: python send_email.py
+      env:
+        EMAIL_USER: ${{ secrets.EMAIL_USER }}
+        EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+        EMAIL_TO: ${{ secrets.EMAIL_TO }}
