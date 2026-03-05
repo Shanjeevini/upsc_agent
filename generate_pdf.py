@@ -1,64 +1,69 @@
 from fpdf import FPDF
-from datetime import datetime
 from agent import agent_run
-import traceback
+from datetime import datetime
 
 
-# Fix for special characters that FPDF cannot handle
 def clean_text(text):
+    """
+    Remove unsupported unicode characters for FPDF
+    """
     return text.encode("latin-1", "replace").decode("latin-1")
-
-
-class UPSCPDF(FPDF):
-
-    def header(self):
-        self.set_font("Arial", "B", 16)
-        self.cell(0, 10, "UPSC Daily Current Affairs", 0, 1, "C")
-
-        today = datetime.now().strftime("%d %B %Y")
-        self.set_font("Arial", "", 12)
-        self.cell(0, 8, f"Date: {today}", 0, 1, "C")
-
-        self.ln(10)
 
 
 def generate_pdf():
 
-    print("Starting UPSC Agent...")
-
-    try:
-        notes = agent_run()
-
-        if not notes:
-            print("Agent returned empty notes.")
-            notes = ["No relevant news found today."]
-
-    except Exception as e:
-
-        print("Agent crashed! Printing full error:")
-        traceback.print_exc()
-
-        notes = ["Agent failed but PDF will still be created."]
-
-    pdf = UPSCPDF()
+    pdf = FPDF()
     pdf.add_page()
+
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # Title
+    pdf.set_font("Arial", "B", 18)
+    pdf.cell(0, 10, "UPSC Daily Current Affairs", ln=True, align="C")
+
+    pdf.ln(5)
 
     pdf.set_font("Arial", "", 12)
 
-    for i, note in enumerate(notes, start=1):
+    date = datetime.now().strftime("%d %B %Y")
+    pdf.cell(0, 10, f"Date: {date}", ln=True, align="C")
+
+    pdf.ln(15)
+
+    try:
+
+        notes = agent_run()
+
+        if not notes:
+            notes = ["No important UPSC news found today."]
+
+    except Exception as e:
+
+        print("Agent error:", e)
+
+        notes = ["Agent encountered an error while collecting news."]
+
+    # Write topics
+    topic_number = 1
+
+    for note in notes:
 
         pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, clean_text(f"Topic {i}"), 0, 1)
+        pdf.cell(0, 10, f"Topic {topic_number}", ln=True)
 
         pdf.set_font("Arial", "", 12)
-        pdf.multi_cell(0, 8, clean_text(note))
+
+        cleaned_note = clean_text(note)
+
+        pdf.multi_cell(0, 8, cleaned_note)
+
         pdf.ln(5)
 
-    filename = "upsc_daily_report.pdf"
+        topic_number += 1
 
-    pdf.output(filename)
+    pdf.output("upsc_daily_report.pdf")
 
-    print("PDF generated successfully:", filename)
+    print("PDF generated successfully")
 
 
 if __name__ == "__main__":
