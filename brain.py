@@ -1,10 +1,12 @@
 import os
 import json
-from openai import OpenAI
+from groq import Groq
 import wikipediaapi
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Initialize Groq client
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 
 # Wikipedia setup
 wiki = wikipediaapi.Wikipedia(
@@ -13,24 +15,23 @@ wiki = wikipediaapi.Wikipedia(
 )
 
 
-# -----------------------------------
-# 1️⃣ Evaluate news importance
-# -----------------------------------
-
+# ------------------------------
+# Evaluate if news is important
+# ------------------------------
 def evaluate_news(headline):
 
     prompt = f"""
-You are an expert UPSC and SSC current affairs analyst.
+You are an expert UPSC and SSC exam analyst.
 
-Evaluate this news headline and determine if it is relevant for competitive exams.
+Evaluate the following news headline.
 
 Headline:
 {headline}
 
 Tasks:
 
-1. Decide if this news is relevant for UPSC or SSC exams.
-2. If relevant, classify it into one category:
+1. Determine if this news is relevant for competitive exams.
+2. If relevant, classify into one category:
 
 World
 India
@@ -41,24 +42,22 @@ Environment
 International Relations
 Tamil Nadu
 
-3. Extract the main topic/entity (country, organization, person, institution).
+3. Extract the main topic/entity.
 
 Respond ONLY in JSON format:
 
 {{
 "relevant": "Yes or No",
-"category": "Category name",
-"topic": "main topic/entity",
-"reason": "Why this news matters for exams"
+"category": "category name",
+"topic": "main entity",
+"reason": "why it matters for exams"
 }}
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.2
+        model="llama-3.1-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
     )
 
     result = response.choices[0].message.content
@@ -69,11 +68,13 @@ Respond ONLY in JSON format:
         return None
 
 
-# -----------------------------------
-# 2️⃣ Retrieve background knowledge
-# -----------------------------------
-
+# ------------------------------
+# Retrieve background knowledge
+# ------------------------------
 def retrieve_knowledge(topic):
+
+    if topic is None:
+        return ""
 
     page = wiki.page(topic)
 
@@ -83,14 +84,13 @@ def retrieve_knowledge(topic):
     return ""
 
 
-# -----------------------------------
-# 3️⃣ Generate UPSC exam notes
-# -----------------------------------
-
+# ------------------------------
+# Generate exam notes
+# ------------------------------
 def generate_exam_notes(headline, category, topic, background):
 
     prompt = f"""
-You are a UPSC current affairs analyst.
+You are a UPSC current affairs expert.
 
 Create exam-ready notes for the following news.
 
@@ -100,19 +100,19 @@ Headline:
 Category:
 {category}
 
-Main Topic:
+Topic:
 {topic}
 
 Background Knowledge:
 {background}
 
-Generate structured UPSC notes.
+Generate structured notes.
 
 Format:
 
 Summary
 
-Key Points (bullet list)
+Key Points
 
 Important GK Facts
 
@@ -120,11 +120,9 @@ Possible Exam Questions
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.3
+        model="llama-3.1-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
     )
 
     return response.choices[0].message.content
