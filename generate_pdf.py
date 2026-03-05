@@ -46,7 +46,7 @@ def generate_pdf():
         pdf.multi_cell(0, 8, safe_note)
         pdf.ln(3)
 
-    filename = "upsc_daily_notes.pdf"
+    filename = "upsc_daily_report.pdf"
 
     pdf.output(filename)
 
@@ -55,3 +55,4 @@ def generate_pdf():
 
 if __name__ == "__main__":
     generate_pdf()
+
