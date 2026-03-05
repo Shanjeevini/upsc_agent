@@ -1,90 +1,130 @@
 import os
-import openai
+import json
+from openai import OpenAI
 import wikipediaapi
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Initialize OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Wikipedia setup
 wiki = wikipediaapi.Wikipedia(
     user_agent="UPSC-AI-Agent",
     language="en"
 )
 
+
+# -----------------------------------
+# 1️⃣ Evaluate news importance
+# -----------------------------------
+
 def evaluate_news(headline):
 
     prompt = f"""
-You are an expert UPSC and SSC exam analyst.
+You are an expert UPSC and SSC current affairs analyst.
 
-Evaluate the following news headline:
+Evaluate this news headline and determine if it is relevant for competitive exams.
 
+Headline:
 {headline}
 
 Tasks:
-1. Is this relevant for UPSC or SSC exams? (Yes or No)
-2. If relevant, classify into one of these:
-   World
-   India
-   Polity
-   Economy
-   Science & Technology
-   Environment
-   International Relations
-   Tamil Nadu
-3. Explain why it is important for competitive exams.
-4. Extract the key topic entity (country, organization, person, institution).
 
-Respond in JSON format.
+1. Decide if this news is relevant for UPSC or SSC exams.
+2. If relevant, classify it into one category:
+
+World
+India
+Polity
+Economy
+Science & Technology
+Environment
+International Relations
+Tamil Nadu
+
+3. Extract the main topic/entity (country, organization, person, institution).
+
+Respond ONLY in JSON format:
+
+{{
+"relevant": "Yes or No",
+"category": "Category name",
+"topic": "main topic/entity",
+"reason": "Why this news matters for exams"
+}}
 """
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role":"user","content":prompt}],
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
         temperature=0.2
     )
 
-    return response["choices"][0]["message"]["content"]
+    result = response.choices[0].message.content
 
+    try:
+        return json.loads(result)
+    except:
+        return None
+
+
+# -----------------------------------
+# 2️⃣ Retrieve background knowledge
+# -----------------------------------
 
 def retrieve_knowledge(topic):
 
     page = wiki.page(topic)
 
     if page.exists():
-
-        text = page.summary[:1000]
-
-        return text
+        return page.summary[:1200]
 
     return ""
 
 
-def generate_exam_notes(headline, topic, background):
+# -----------------------------------
+# 3️⃣ Generate UPSC exam notes
+# -----------------------------------
+
+def generate_exam_notes(headline, category, topic, background):
 
     prompt = f"""
 You are a UPSC current affairs analyst.
 
+Create exam-ready notes for the following news.
+
 Headline:
 {headline}
 
-Topic:
+Category:
+{category}
+
+Main Topic:
 {topic}
 
 Background Knowledge:
 {background}
 
-Create exam ready notes.
+Generate structured UPSC notes.
 
-Structure:
+Format:
 
 Summary
-Key Facts
-Important GK Points
+
+Key Points (bullet list)
+
+Important GK Facts
+
 Possible Exam Questions
 """
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role":"user","content":prompt}],
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
         temperature=0.3
     )
 
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
