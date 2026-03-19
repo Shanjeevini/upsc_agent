@@ -1,9 +1,5 @@
 name: Daily UPSC Agent
 
-on:
-  schedule:
-    - cron: '0 */2 * * *'   # 8 PM IST
-  workflow_dispatch:
 
 jobs:
   run-agent:
